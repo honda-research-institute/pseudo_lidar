@@ -12,6 +12,11 @@ python ./psmnet/submission.py \
     --loadmodel ./psmnet/pretrained_model_KITTI2015.tar \
     --datapath ./KITTI/object/training/ \
     --save_path ./KITTI/object/training/predict_disparity
+
+python ./psmnet/inference.py \
+    --loadmodel ./psmnet/pretrained_model_KITTI2015.tar \
+    --save_path ./psmnet/predict_disparity \
+    --save_figure
 ```
 
 # Dense disparity => Psuedo-point cloud

@@ -11,10 +11,10 @@ def generate_dispariy_from_velo(pc_velo, height, width, calib):
     pts_2d = calib.project_velo_to_image(pc_velo)
     fov_inds = (pts_2d[:, 0] < width - 1) & (pts_2d[:, 0] >= 0) & \
                (pts_2d[:, 1] < height - 1) & (pts_2d[:, 1] >= 0)
-    fov_inds = fov_inds & (pc_velo[:, 0] > 2)
-    imgfov_pc_velo = pc_velo[fov_inds, :]
-    imgfov_pts_2d = pts_2d[fov_inds, :]
-    imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
+    fov_inds = fov_inds & (pc_velo[:, 0] > 2) # select frontal & inside cam FOV
+    imgfov_pc_velo = pc_velo[fov_inds, :] # (N, 3)
+    imgfov_pts_2d = pts_2d[fov_inds, :]   # (N, 2)
+    imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo) # (N, 3)
     depth_map = np.zeros((height, width)) - 1
     imgfov_pts_2d = np.round(imgfov_pts_2d).astype(int)
     for i in range(imgfov_pts_2d.shape[0]):
@@ -22,6 +22,7 @@ def generate_dispariy_from_velo(pc_velo, height, width, calib):
         depth_map[int(imgfov_pts_2d[i, 1]), int(imgfov_pts_2d[i, 0])] = depth
     baseline = 0.54
 
+    # Convert depth_map -> disp_map
     disp_map = (calib.f_u * baseline) / depth_map
     return disp_map
 

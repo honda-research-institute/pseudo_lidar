@@ -1,0 +1,1 @@
+python preprocessing/show_dense_disparity.py $1

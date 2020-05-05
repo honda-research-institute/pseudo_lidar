@@ -56,7 +56,8 @@ if __name__ == '__main__':
 
     for fn in disps:
         predix = fn[:-4]
-        calib_file = '{}/{}.txt'.format(args.calib_dir, predix)
+        #calib_file = '{}/{}.txt'.format(args.calib_dir, predix) # kitti
+        calib_file = '{}/calib.txt'.format(args.calib_dir) # sunny
         calib = kitti_util.Calibration(calib_file)
         # disp_map = ssc.imread(args.disparity_dir + '/' + fn) / 256.
         if fn[-3:] == 'png':

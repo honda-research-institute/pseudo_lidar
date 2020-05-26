@@ -7,9 +7,8 @@ import scipy.misc as ssc
 import kitti_util
 
 
-def project_disp_to_points(calib, disp, max_high):
+def project_disp_to_points(calib, disp, baseline, max_high):
     disp[disp < 0] = 0
-    baseline = 0.54
     mask = disp > 0
     depth = calib.f_u * baseline / (disp + 1. - mask)
     rows, cols = depth.shape
@@ -41,6 +40,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', type=str,
                         default='~/Kitti/object/training/predicted_velodyne')
     parser.add_argument('--max_high', type=int, default=1)
+    parser.add_argument('--baseline', type=float, default=0.54) #apollo=0.7
     parser.add_argument('--is_depth', action='store_true')
 
     args = parser.parse_args()
@@ -57,6 +57,7 @@ if __name__ == '__main__':
     for fn in disps:
         predix = fn[:-4]
         #calib_file = '{}/{}.txt'.format(args.calib_dir, predix) # kitti
+        #calib_file = '{}/calib_half.txt'.format(args.calib_dir)  # apollo
         calib_file = '{}/calib.txt'.format(args.calib_dir) # sunny
         calib = kitti_util.Calibration(calib_file)
         # disp_map = ssc.imread(args.disparity_dir + '/' + fn) / 256.
@@ -68,9 +69,9 @@ if __name__ == '__main__':
             assert False
         if not args.is_depth:
             disp_map = (disp_map*256).astype(np.uint16)/256.
-            lidar = project_disp_to_points(calib, disp_map, args.max_high)
+            lidar = project_disp_to_points(calib, disp_map, args.baseline, args.max_high)
         else:
-            disp_map = (disp_map).astype(np.float32)/256.
+            disp_map = (disp_map).astype(np.float32)
             lidar = project_depth_to_points(calib, disp_map, args.max_high)
         # pad 1 in the indensity dimension
         lidar = np.concatenate([lidar, np.ones((lidar.shape[0], 1))], 1)

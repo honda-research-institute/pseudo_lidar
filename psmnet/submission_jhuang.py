@@ -13,19 +13,24 @@ import torch.nn.functional as F
 import skimage
 import skimage.io
 import skimage.transform
+import matplotlib.pyplot as plt
 import numpy as np
 import time
-import math
 from utils import preprocess 
 from models import *
+import turbo_colormap_mpl # "turbo" colormap
 
 # 2012 data /media/jiaren/ImageNet/data_scene_flow_2012/testing/
 
 parser = argparse.ArgumentParser(description='PSMNet')
 parser.add_argument('--KITTI', default='2015',
                     help='KITTI version')
-parser.add_argument('--datapath', default='/scratch/datasets/kitti2015/testing/',
-                    help='select model')
+parser.add_argument('--datapath', default='/scratch/',
+                    help='select dir')
+parser.add_argument('--leftdir', default='',
+                    help='select dir')
+parser.add_argument('--rightdir', default='',
+                    help='select dir')
 parser.add_argument('--loadmodel', default=None,
                     help='loading model')
 parser.add_argument('--model', default='stackhourglass',
@@ -39,6 +44,7 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
 parser.add_argument('--save_path', type=str, default='finetune_1000', metavar='S',
                     help='path to save the predict')
 parser.add_argument('--save_figure', action='store_true', help='if true, save the numpy file, not the png file')
+parser.add_argument('--save_both', action='store_true', help='if true, save both numpy file and png file')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -46,9 +52,9 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-from dataloader import sunny_submission_loader as DA
+from dataloader import jhuang_submission_loader as DA
 
-test_left_img, test_right_img = DA.dataloader(args.datapath)
+test_left_img, test_right_img = DA.dataloader(args.datapath, args.leftdir, args.rightdir)
 
 if args.model == 'stackhourglass':
     model = stackhourglass(args.maxdisp)
@@ -62,7 +68,7 @@ model.cuda()
 
 if args.loadmodel is not None:
     state_dict = torch.load(args.loadmodel)
-    model.load_state_dict(state_dict['state_dict'])
+    model.load_state_dict(state_dict['state_dict'], strict=False)
 
 print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
@@ -95,6 +101,10 @@ def main():
 
        imgL_o = (skimage.io.imread(test_left_img[inx]).astype('float32'))
        imgR_o = (skimage.io.imread(test_right_img[inx]).astype('float32'))
+       if len(imgL_o.shape) == 2:
+           # Convert grayscale into color
+           imgL_o = np.stack((imgL_o,) * 3, axis=-1)
+           imgR_o = np.stack((imgR_o,) * 3, axis=-1)
        orig_h, orig_w = imgL_o.shape[0:2]
        do_resize = False
        while orig_h * orig_w >= 2000000:
@@ -134,7 +144,14 @@ def main():
        left_pad  = new_w-imgL_o.shape[1]
        img = pred_disp[top_pad:,:-left_pad]
 
-       if args.save_figure:
+       if args.save_both:
+           if not os.path.isdir(args.datapath + '/predict_disparity_img'):
+               os.makedirs(args.datapath + '/predict_disparity_img')
+           #skimage.io.imsave(args.datapath + '/predict_disparity_img/' + imgL_name, (img * 256).astype('uint16'))
+           plt.imsave(args.datapath + '/predict_disparity_img/' + imgL_name, img / np.max(img), cmap='turbo', vmin=0,
+                      vmax=1)
+           np.save(args.save_path + '/' + imgL_name[:-4], img)
+       elif args.save_figure:
            skimage.io.imsave(args.save_path+'/'+imgL_name,(img*256).astype('uint16'))
        else:
            np.save(args.save_path+'/'+imgL_name[:-4], img)

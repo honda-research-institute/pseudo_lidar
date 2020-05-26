@@ -145,7 +145,7 @@ def main():
        save_name = l_fname.replace("_L.png", ".png")
        if args.save_figure:
            #skimage.io.imsave(args.save_path+'/'+save_name,(img*256).astype('uint16'))
-           plt.imsave(args.save_path+'/'+save_name, img / np.max(img), cmap='inferno', vmin=0, vmax=1)
+           plt.imsave(args.save_path+'/'+save_name, img / np.max(img), cmap='jet', vmin=0, vmax=1)
        else:
            pass
            #np.save(args.save_path+'/'+test_left_img[inx].split('/')[-1][:-4], img)

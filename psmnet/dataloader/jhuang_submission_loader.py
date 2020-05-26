@@ -14,18 +14,16 @@ IMG_EXTENSIONS = [
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
-def dataloader(filepath):
+def dataloader(filepath, leftdir, rightdir):
 
-  left_fold  = 'camera_5/'
-  right_fold = 'camera_6/'
+  left_fold  = leftdir
+  right_fold = rightdir
 
-
-  # image = [img for img in os.listdir(filepath+left_fold) if img.find('_10') > -1]
-  image = [img for img in os.listdir(filepath+left_fold)]
+  image = [img for img in os.listdir(os.path.join(filepath, left_fold))]
   image = sorted(image)
 
 
-  left_test  = [filepath+left_fold+img for img in image]
-  right_test = [filepath+right_fold+img for img in image]
+  left_test  = [os.path.join(filepath, left_fold, img) for img in image]
+  right_test = [os.path.join(filepath, right_fold, img) for img in image]
 
   return left_test, right_test

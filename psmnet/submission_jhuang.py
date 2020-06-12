@@ -45,6 +45,8 @@ parser.add_argument('--save_path', type=str, default='finetune_1000', metavar='S
                     help='path to save the predict')
 parser.add_argument('--save_figure', action='store_true', help='if true, save the numpy file, not the png file')
 parser.add_argument('--save_both', action='store_true', help='if true, save both numpy file and png file')
+parser.add_argument('--save_depth', action='store_true', help='if true, save both numpy file and png file')
+parser.add_argument('--calibdir', default='', help='select dir')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -88,12 +90,26 @@ def test(imgL,imgR):
 
         return pred_disp
 
+def get_bl_t_fl(filepath):
+    data = {}
+    with open(filepath, 'r') as f:
+        for line in f.readlines():
+            line = line.rstrip()
+            if len(line) == 0: continue
+            key, value = line.split(':', 1)
+            # The only non-float values in these files are dates, which
+            # we don't care about anyway
+            try:
+                data[key] = np.array([float(x) for x in value.split()])
+            except ValueError:
+                pass
+
+    return data['P2'][0] * 0.54
 
 def main():
    processed = preprocess.get_transform(augment=False)
    if not os.path.isdir(args.save_path):
        os.makedirs(args.save_path)
-
 
    for inx in range(len(test_left_img)):
        imgL_name = test_left_img[inx].split('/')[-1]
@@ -147,14 +163,23 @@ def main():
        if args.save_both:
            if not os.path.isdir(args.datapath + '/predict_disparity_img'):
                os.makedirs(args.datapath + '/predict_disparity_img')
-           #skimage.io.imsave(args.datapath + '/predict_disparity_img/' + imgL_name, (img * 256).astype('uint16'))
            plt.imsave(args.datapath + '/predict_disparity_img/' + imgL_name, img / np.max(img), cmap='turbo', vmin=0,
                       vmax=1)
            np.save(args.save_path + '/' + imgL_name[:-4], img)
        elif args.save_figure:
            skimage.io.imsave(args.save_path+'/'+imgL_name,(img*256).astype('uint16'))
+       elif args.save_depth:
+           calibfile = os.path.join(args.calibdir, imgL_name.replace('.png', '.txt'))
+           bl_t_fl = get_bl_t_fl(calibfile)
+           depth_map = bl_t_fl / img
+           depth_save_path = os.path.join(args.datapath, 'predict_depth')
+           if not os.path.isdir(depth_save_path):
+               os.makedirs(depth_save_path)
+           skimage.io.imsave(os.path.join(depth_save_path, imgL_name), (depth_map * 256).astype('uint16'))
        else:
            np.save(args.save_path+'/'+imgL_name[:-4], img)
+
+
 
 if __name__ == '__main__':
    main()
